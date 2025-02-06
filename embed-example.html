@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat Interface Embed Example</title>
+</head>
+<body>
+    <h1>Welcome to the Chat Interface Embed Example</h1>
+    <p>The chat interface should appear in the bottom-right corner of this page.</p>
+    
+    <!-- Chat interface container -->
+    <div id="chat-container"></div>
+
+    <!-- Load the bundled script -->
+    <script src="./dist/chat-interface.js"></script>
+    
+    <!-- Initialize the chat interface -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            if (typeof initChatInterface === 'function') {
+                initChatInterface('chat-container', 'bottom-right');
+            } else {
+                console.error('initChatInterface function not found');
+            }
+        });
+    </script>
+</body>
+</html>
+
