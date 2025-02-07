@@ -51,7 +51,7 @@ export const MessageList: React.FC<MessageListProps> = ({ messages, streamingMes
     <StyledMessageList aria-live="polite" aria-relevant="additions">
       {messages.map((message, index) => (
         <MessageItem key={index} $isUser={message.sender === "User"}>
-          <SenderName>{message.sender === "AI" ? "Addison" : message.sender}</SenderName>
+          <SenderName>{message.sender}</SenderName>
           <MessageContent $isUser={message.sender === "User"} $isError={message.sender === "System"}>
             <MessageText>
               {message.sender === "User" ? message.content : <ReactMarkdown>{message.content}</ReactMarkdown>}
@@ -62,7 +62,7 @@ export const MessageList: React.FC<MessageListProps> = ({ messages, streamingMes
       ))}
       {streamingMessage && (
         <MessageItem $isUser={false}>
-          <SenderName>Addison</SenderName>
+          <SenderName></SenderName>
           <MessageContent $isUser={false} $isError={false}>
             <MessageText>
               <ReactMarkdown>{streamingMessage.content}</ReactMarkdown>
