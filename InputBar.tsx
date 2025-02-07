@@ -2,7 +2,7 @@
 
 import type React from "react"
 import { useState } from "react"
-import styled from "styled-components"
+import styled from "@emotion/styled"
 import { useSelector } from "react-redux"
 import type { RootState } from "./store"
 import { Loader2 } from "lucide-react"

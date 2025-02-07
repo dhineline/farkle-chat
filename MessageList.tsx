@@ -1,5 +1,5 @@
 import type React from "react"
-import styled from "styled-components"
+import styled from "@emotion/styled"
 import type { Message } from "./types"
 import ReactMarkdown from "react-markdown"
 
@@ -20,24 +20,14 @@ const SenderName = styled.div`
   margin-bottom: 4px;
 `
 
-const MessageContent = styled.div<{ $isUser: boolean; $isError?: boolean }>`
+const MessageContent = styled.div<{ $isUser: boolean; $isError: boolean }>`
   display: inline-block;
-  background-color: ${(props) => {
-    if (props.$isError) return "white"
-    return props.$isUser ? "#E2E8F0" : "#FFF3E0" // Light orangey yellow for bot messages
-  }};
-  color: ${(props) => {
-    if (props.$isError) return "#DC2626"
-    return "#1F2937"
-  }};
+  background-color: ${(props) => (props.$isError ? "white" : props.$isUser ? "#E2E8F0" : "#FFF3E0")};
+  color: ${(props) => (props.$isError ? "#DC2626" : "#1F2937")};
   padding: 8px 12px;
   border-radius: 10px;
   max-width: 70%;
-  ${(props) =>
-    props.$isError &&
-    `
-    border: 1px solid #DC2626;
-  `}
+  border: ${(props) => (props.$isError ? "1px solid #DC2626" : "none")};
 `
 
 const MessageText = styled.div`
@@ -53,9 +43,10 @@ const Timestamp = styled.div`
 
 interface MessageListProps {
   messages: Message[]
+  streamingMessage: Message | null
 }
 
-export const MessageList: React.FC<MessageListProps> = ({ messages }) => {
+export const MessageList: React.FC<MessageListProps> = ({ messages, streamingMessage }) => {
   return (
     <StyledMessageList aria-live="polite" aria-relevant="additions">
       {messages.map((message, index) => (
@@ -69,6 +60,17 @@ export const MessageList: React.FC<MessageListProps> = ({ messages }) => {
           </MessageContent>
         </MessageItem>
       ))}
+      {streamingMessage && (
+        <MessageItem $isUser={false}>
+          <SenderName>Addison</SenderName>
+          <MessageContent $isUser={false} $isError={false}>
+            <MessageText>
+              <ReactMarkdown>{streamingMessage.content}</ReactMarkdown>
+            </MessageText>
+            <Timestamp>{new Date(streamingMessage.timestamp).toLocaleString()}</Timestamp>
+          </MessageContent>
+        </MessageItem>
+      )}
     </StyledMessageList>
   )
 }

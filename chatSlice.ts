@@ -1,71 +1,62 @@
-"use client"
-
-import { createSlice, createAsyncThunk } from "@reduxjs/toolkit"
+import { createSlice, createAsyncThunk, type PayloadAction } from "@reduxjs/toolkit"
 import type { Message } from "./types"
+import { fetchStreamingResponse } from "./api"
+import type { LanguageOption } from "./LanguageSelector"
 
 interface ChatState {
   messages: Message[]
   isLoading: boolean
   error: string | null
+  currentStreamingMessage: Message | null
+  language: LanguageOption
 }
 
 const initialState: ChatState = {
   messages: [
     {
       content: "Hello! How can I help you today?",
-      sender: "AI",
+      sender: "Assistant",
       timestamp: Date.now() - 50000,
     },
   ],
   isLoading: false,
   error: null,
+  currentStreamingMessage: null,
+  language: { value: "en", label: "English", nativeName: "English" },
 }
 
-// Mock responses for demonstration
-const mockResponses = [
-  "I understand your question. Let me help you with that.",
-  "That's an interesting point. Here's what I think:\n\n- Point 1\n- Point 2\n- Point 3",
-  "Based on the information you've provided, I would suggest checking out [this resource](https://example.com).",
-  "I'm processing your request. Here's what I found:\n\n```\nSome code example\n```",
-]
+export const sendMessage = createAsyncThunk("chat/sendMessage", async (content: string, { getState, dispatch }) => {
+  const state = getState() as { chat: ChatState }
+  const { messages, language } = state.chat
 
-const mockErrors = [
-  "Error: Connection timeout. Please try again.",
-  "Error 429: Too many requests. Please wait a moment before trying again.",
-  "Error: Unable to process your request at this time.",
-]
-
-export const sendMessage = createAsyncThunk("chat/sendMessage", async (content: string) => {
-  // Simulate API call
-  await new Promise((resolve) => setTimeout(resolve, 1000))
-
-  // Randomly decide whether to simulate an error (1 in 5 chance)
-  if (Math.random() < 0.2) {
-    throw new Error(mockErrors[Math.floor(Math.random() * mockErrors.length)])
+  const userMessage: Message = {
+    content,
+    sender: "User",
+    timestamp: Date.now(),
   }
 
-  const response = mockResponses[Math.floor(Math.random() * mockResponses.length)]
+  dispatch(chatSlice.actions.addMessage(userMessage))
 
-  // Simulate streaming by breaking the response into chunks
-  const words = response.split(" ")
-  let fullResponse = ""
+  const response = await fetchStreamingResponse(content, messages, language)
+  const reader = response.body?.getReader()
 
-  for (const word of words) {
-    await new Promise((resolve) => setTimeout(resolve, 100))
-    fullResponse += word + " "
-  }
+  if (reader) {
+    dispatch(
+      chatSlice.actions.startStreaming({
+        content: "",
+        sender: "Assistant",
+        timestamp: Date.now(),
+      }),
+    )
 
-  return {
-    userMessage: {
-      content,
-      sender: "User",
-      timestamp: Date.now(),
-    },
-    aiMessage: {
-      content: fullResponse.trim(),
-      sender: "AI",
-      timestamp: Date.now() + 1000,
-    },
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+      const chunk = new TextDecoder().decode(value)
+      dispatch(chatSlice.actions.appendToStreamingMessage(chunk))
+    }
+
+    dispatch(chatSlice.actions.finishStreaming())
   }
 })
 
@@ -77,6 +68,26 @@ export const chatSlice = createSlice({
       state.messages = []
       state.error = null
     },
+    addMessage: (state, action: PayloadAction<Message>) => {
+      state.messages.push(action.payload)
+    },
+    startStreaming: (state, action: PayloadAction<Message>) => {
+      state.currentStreamingMessage = action.payload
+    },
+    appendToStreamingMessage: (state, action: PayloadAction<string>) => {
+      if (state.currentStreamingMessage) {
+        state.currentStreamingMessage.content += action.payload
+      }
+    },
+    finishStreaming: (state) => {
+      if (state.currentStreamingMessage) {
+        state.messages.push(state.currentStreamingMessage)
+        state.currentStreamingMessage = null
+      }
+    },
+    setLanguage: (state, action: PayloadAction<LanguageOption>) => {
+      state.language = action.payload
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -84,10 +95,8 @@ export const chatSlice = createSlice({
         state.isLoading = true
         state.error = null
       })
-      .addCase(sendMessage.fulfilled, (state, action) => {
+      .addCase(sendMessage.fulfilled, (state) => {
         state.isLoading = false
-        state.messages.push(action.payload.userMessage)
-        state.messages.push(action.payload.aiMessage)
       })
       .addCase(sendMessage.rejected, (state, action) => {
         state.isLoading = false
@@ -100,4 +109,7 @@ export const chatSlice = createSlice({
       })
   },
 })
+
+export const { clearHistory, addMessage, startStreaming, appendToStreamingMessage, finishStreaming, setLanguage } =
+  chatSlice.actions
 

@@ -1,49 +1,69 @@
 "use client"
 
 import type React from "react"
-import styled from "styled-components"
+import Select from "react-select"
+import styled from "@emotion/styled"
 
-const StyledSelect = styled.select`
-  padding: 8px;
-  border: 1px solid ${({ theme }) => theme.colors.border};
-  border-radius: 4px;
-  background-color: white;
-  flex: 1;
-  font-family: Arial, sans-serif;
+const StyledSelect = styled(Select)`
+  width: 100%;
   font-size: 14px;
-  color: ${({ theme }) => theme.colors.text};
-
-  &:focus {
-    outline: none;
-    border-color: ${({ theme }) => theme.colors.primary};
-    box-shadow: 0 0 0 1px ${({ theme }) => theme.colors.primary};
+  .react-select__control {
+    border: 1px solid ${({ theme }) => theme.colors.border};
+    border-radius: 4px;
+    background-color: white;
+    min-height: 36px;
+  }
+  .react-select__value-container {
+    padding: 2px 8px;
+  }
+  .react-select__input-container {
+    margin: 0;
+    padding: 0;
+  }
+  .react-select__single-value {
+    color: ${({ theme }) => theme.colors.text};
+  }
+  .react-select__menu {
+    z-index: 1000;
   }
 `
 
+export interface LanguageOption {
+  value: string
+  label: string
+  nativeName: string
+}
+
 interface LanguageSelectorProps {
   language: string
-  onLanguageChange: (language: string) => void
+  onLanguageChange: (language: LanguageOption) => void
 }
 
 export const LanguageSelector: React.FC<LanguageSelectorProps> = ({ language, onLanguageChange }) => {
-  const languages = [
-    { code: "en", name: "English" },
-    { code: "es", name: "Español" },
-    { code: "de", name: "Deutsch" },
-    { code: "fr", name: "Français" },
-    { code: "pt", name: "Português" },
-    { code: "it", name: "Italiano" },
-    { code: "el", name: "Ελληνικά" },
+  const languages: LanguageOption[] = [
+    { value: "en", label: "English", nativeName: "English" },
+    { value: "es", label: "Spanish", nativeName: "Español" },
+    { value: "de", label: "German", nativeName: "Deutsch" },
+    { value: "fr", label: "French", nativeName: "Français" },
+    { value: "pt", label: "Portuguese", nativeName: "Português" },
+    { value: "it", label: "Italian", nativeName: "Italiano" },
+    { value: "el", label: "Greek", nativeName: "Ελληνικά" },
   ]
 
+  const handleChange = (selectedOption: LanguageOption | null) => {
+    if (selectedOption) {
+      onLanguageChange(selectedOption)
+    }
+  }
+
   return (
-    <StyledSelect value={language} onChange={(e) => onLanguageChange(e.target.value)} aria-label="Select language">
-      {languages.map((lang) => (
-        <option key={lang.code} value={lang.code}>
-          {lang.name}
-        </option>
-      ))}
-    </StyledSelect>
+    <StyledSelect
+      options={languages}
+      value={languages.find((lang) => lang.value === language)}
+      onChange={handleChange}
+      aria-label="Select language"
+      classNamePrefix="react-select"
+    />
   )
 }
 

@@ -1,8 +1,11 @@
 import React from "react"
 import ReactDOM from "react-dom"
 import { Provider } from "react-redux"
-import { store } from "./store"
+import { createStore } from "redux"
+import { rootReducer } from "./reducers"
 import { ChatInterface } from "./ChatInterface"
+
+const store = createStore(rootReducer)
 
 export function initChatInterface(
   containerId: string,

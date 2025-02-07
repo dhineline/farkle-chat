@@ -3,11 +3,11 @@
 import type React from "react"
 import { useState, useEffect, useRef } from "react"
 import { useDispatch } from "react-redux"
-import styled from "styled-components"
+import styled from "@emotion/styled"
 import { ChatWindow } from "./ChatWindow"
 import { ChatButton } from "./ChatButton"
 import { chatSlice } from "./chatSlice"
-import { ThemeProvider } from "styled-components"
+import { ThemeProvider } from "@emotion/react"
 import { theme } from "./theme"
 
 const StyledChatInterface = styled.div`
@@ -34,7 +34,6 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ position }) => {
     }
   })
   const chatRef = useRef<HTMLDivElement>(null)
-  const originalPosition = windowPosition
 
   const toggleChat = () => {
     if (isOpen) {
@@ -46,8 +45,6 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ position }) => {
   const handleButtonClick = () => {
     setIsOpen(!isOpen)
   }
-
-  
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -65,8 +62,15 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ position }) => {
   return (
     <ThemeProvider theme={theme}>
       <StyledChatInterface ref={chatRef}>
-        {isOpen && <ChatWindow onClose={toggleChat} position={position} windowPosition={windowPosition} />}
-        <ChatButton onOpen={handleButtonClick}  position={position} isOpen={isOpen} />
+        {isOpen && (
+          <ChatWindow
+            onClose={toggleChat}
+            position={position}
+            windowPosition={windowPosition}
+            setWindowPosition={setWindowPosition}
+          />
+        )}
+        <ChatButton onOpen={handleButtonClick} position={position} isOpen={isOpen} />
       </StyledChatInterface>
     </ThemeProvider>
   )

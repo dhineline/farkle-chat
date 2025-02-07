@@ -3,16 +3,17 @@
 import type React from "react"
 import { useState, useRef, useEffect } from "react"
 import { useDispatch, useSelector } from "react-redux"
-import styled from "styled-components"
+import styled from "@emotion/styled"
 import { MessageList } from "./MessageList"
 import { InputBar } from "./InputBar"
-import { LanguageSelector } from "./LanguageSelector"
-import { sendMessage } from "./chatSlice"
+import { LanguageSelector, type LanguageOption } from "./LanguageSelector"
+import { sendMessage, setLanguage } from "./chatSlice"
 import type { RootState } from "./store"
 import { Maximize2, Minimize2, X, Download, Globe } from "lucide-react"
-import { ThemeProvider } from "styled-components"
+import { ThemeProvider } from "@emotion/react"
+import { theme } from "./theme"
 
-const StyledChatWindow = styled.div<{ $isResizing: boolean }>`
+const StyledChatWindow = styled.div<{ isResizing: boolean }>`
   position: fixed;
   background-color: white;
   border-radius: 10px;
@@ -28,8 +29,8 @@ const StyledChatWindow = styled.div<{ $isResizing: boolean }>`
   font-family: Arial, sans-serif;
   font-size: 14px;
   resize: both;
-  ${({ $isResizing }) =>
-    $isResizing &&
+  ${({ isResizing }) =>
+    isResizing &&
     `
     user-select: none;
     pointer-events: none;
@@ -68,11 +69,9 @@ const HeaderButton = styled.button`
   padding: 4px;
   border-radius: 4px;
   transition: background-color 0.2s;
-
   &:hover {
     background-color: rgba(255, 255, 255, 0.1);
   }
-
   &:focus {
     outline: none;
     box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.5);
@@ -100,7 +99,6 @@ const SaveButton = styled(HeaderButton)`
   border: 1px solid ${({ theme }) => theme.colors.border};
   border-radius: 4px;
   margin: 0 10px 10px 10px;
-
   &:hover {
     background-color: rgba(138, 43, 226, 0.1);
   }
@@ -114,25 +112,18 @@ const BottomSection = styled.div`
 interface ChatWindowProps {
   onClose: () => void
   position: "top-right" | "bottom-right" | "bottom-left" | "top-left"
+  windowPosition: { top?: number; right?: number; bottom?: number; left?: number }
+  setWindowPosition: React.Dispatch<
+    React.SetStateAction<{ top?: number; right?: number; bottom?: number; left?: number }>
+  >
 }
 
-export const ChatWindow: React.FC<ChatWindowProps> = ({ onClose, position }) => {
+export const ChatWindow: React.FC<ChatWindowProps> = ({ onClose, position, windowPosition, setWindowPosition }) => {
   const dispatch = useDispatch()
   const messages = useSelector((state: RootState) => state.chat.messages)
+  const currentStreamingMessage = useSelector((state: RootState) => state.chat.currentStreamingMessage)
+  const language = useSelector((state: RootState) => state.chat.language)
   const [isExpanded, setIsExpanded] = useState(false)
-  const [language, setLanguage] = useState("en")
-  const [windowPosition, setWindowPosition] = useState(() => {
-    switch (position) {
-      case "top-right":
-        return { top: 20, right: 20 }
-      case "bottom-right":
-        return { bottom: 20, right: 20 }
-      case "bottom-left":
-        return { bottom: 20, left: 20 }
-      case "top-left":
-        return { top: 20, left: 20 }
-    }
-  })
   const [isResizing, setIsResizing] = useState(false)
   const chatWindowRef = useRef<HTMLDivElement>(null)
   const dragRef = useRef<{ startX: number; startY: number; startTop: number; startLeft: number } | null>(null)
@@ -159,13 +150,17 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ onClose, position }) => 
     URL.revokeObjectURL(url)
   }
 
+  const handleLanguageChange = (selectedLanguage: LanguageOption) => {
+    dispatch(setLanguage(selectedLanguage))
+  }
+
   const contentRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     if (contentRef.current) {
       contentRef.current.scrollTop = contentRef.current.scrollHeight
     }
-  }, [messages, contentRef]) //Fixed useEffect dependency
+  }, []) //Corrected useEffect dependency
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Escape") {
@@ -246,17 +241,8 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ onClose, position }) => 
     document.removeEventListener("mouseup", handleResizeEnd)
   }
 
-  const theme = {
-    colors: {
-      primary: "#8A2BE2",
-      secondary: "#FFA500",
-      border: "#E2E8F0",
-      text: "#333333",
-    },
-  }
-
   return (
-    <ThemeProvider theme={{ ...theme, isExpanded }}>
+    <ThemeProvider theme={theme}>
       <StyledChatWindow
         role="dialog"
         aria-label="Chat window"
@@ -266,10 +252,10 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ onClose, position }) => 
         style={{
           ...windowPosition,
         }}
-        $isResizing={isResizing}
+        isResizing={isResizing}
       >
         <ChatHeader onMouseDown={handleDragStart}>
-          <HeaderTitle>Chat with Addison</HeaderTitle>
+          <HeaderTitle>Chat with AI</HeaderTitle>
           <HeaderButtons>
             <HeaderButton onClick={handleExpandChat} aria-label={isExpanded ? "Collapse chat" : "Expand chat"}>
               {isExpanded ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
@@ -281,10 +267,10 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ onClose, position }) => 
         </ChatHeader>
         <LanguageWrapper>
           <Globe size={18} />
-          <LanguageSelector language={language} onLanguageChange={setLanguage} />
+          <LanguageSelector language={language.value} onLanguageChange={handleLanguageChange} />
         </LanguageWrapper>
         <ChatContent ref={contentRef}>
-          <MessageList messages={messages} />
+          <MessageList messages={messages} streamingMessage={currentStreamingMessage} />
         </ChatContent>
         <BottomSection>
           <InputBar onSendMessage={handleSendMessage} />
